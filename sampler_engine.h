@@ -4,9 +4,10 @@
 
 namespace crearttech {
 
- * @class OverdubLooper
- * @brief Motor principal del looper con grabación, reproducción, overdub y undo/redo.
- */
+  /**
+   * @class OverdubLooper
+   * @brief Motor principal del looper con grabación, reproducción, overdub y undo/redo.
+   */
 class OverdubLooper {
 public:
   /**
@@ -271,7 +272,7 @@ public:
   bool CanRedo() const { return _undo_enabled && _redo_depth > 0; }
 
   // --- Funciones de Obtención de Estado ---
-
+  /**
    * @brief Devuelve la posición actual del cabezal de reproducción (normalizada 0.0 a 1.0). 
    */
   float GetPlayhead() {
@@ -281,11 +282,11 @@ public:
   /** @brief Devuelve la posición del cabezal dentro de la región del loop (en muestras). */
   size_t GetLoopPlayheadPosition() const { return static_cast<size_t>(_play_head); }
 
-
- * @brief Procesa una única muestra de audio.
- * @param in Muestra de audio de entrada (ADC).
- * @return Muestra de audio de salida (DAC).
- */
+  /**
+   * @brief Procesa una única muestra de audio.
+   * @param in Muestra de audio de entrada (ADC).
+   * @return Muestra de audio de salida (DAC).
+   */
   float Process(float in) {
 
     if (_is_recording) {
