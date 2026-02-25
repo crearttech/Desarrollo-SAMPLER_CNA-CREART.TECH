@@ -1,8 +1,8 @@
-# SAMPLO
+# DESARROLLO DE SAMPLER
 
 **Looper / Sampler de audio en tiempo real construido sobre Daisy Seed.**
 
-SAMPLO es un dispositivo de audio portátil que permite grabar, reproducir, sobreponer capas (overdub) y manipular loops en tiempo real con efectos y control visual mediante pantalla TFT.
+SAMPLER es un dispositivo de audio portátil que permite grabar, reproducir, sobreponer capas (overdub) y manipular loops en tiempo real con efectos y control visual mediante pantalla TFT.
 
 Proyecto desarrollado por **Crearttech** y entregado al **CNA Centro Nacional de las Artes Delia Zapata Olivella** en Bogotá, Colombia.
 
@@ -68,7 +68,7 @@ SAMPLER_CNA/
 
 **Crearttech** — Bogotá, Colombia, 2024
 
-Proyecto entregado al **DELIA — Centro de Formación en Creación y Pedagogía de las Artes**, Bogotá, Colombia.
+Proyecto entregado al **CNA Centro Nacional de las Artes Delia Zapata Olivella**, Bogotá, Colombia.
 
 ---
 
