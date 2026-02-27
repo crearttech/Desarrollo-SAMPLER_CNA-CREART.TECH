@@ -4,10 +4,10 @@
 
 namespace crearttech {
 
-  /**
-   * @class OverdubLooper
-   * @brief Motor principal del looper con grabación, reproducción, overdub y undo/redo.
-   */
+/**
+ * @class OverdubLooper
+ * @brief Motor principal del looper con grabación, reproducción, overdub y undo/redo.
+ */
 class OverdubLooper {
 public:
   /**
@@ -272,6 +272,7 @@ public:
   bool CanRedo() const { return _undo_enabled && _redo_depth > 0; }
 
   // --- Funciones de Obtención de Estado ---
+
   /**
    * @brief Devuelve la posición actual del cabezal de reproducción (normalizada 0.0 a 1.0). 
    */
