@@ -2,7 +2,7 @@
  * ===================================================================== 
  * ===================================================================== 
  * Simple Looper para Daisy Seed con Salida de Audio Analógica (Interna)
- * Corregido: waveform dinámica (calculo al finalizar la grabación) 
+ * Corregido: waveform estilo Ableton (calculo al finalizar la grabación) 
  * ===================================================================== 
  */
 #include <DaisyDuino.h>
@@ -255,7 +255,7 @@ void encoder4_isr() {
 }
 
 
-void generarOndaVisual_Dinamica(WaveformPixel* displayBuf, int displayLen, float* audioBuf, size_t audioLen) {
+void generarOndaVisual_AbletonStyle(WaveformPixel* displayBuf, int displayLen, float* audioBuf, size_t audioLen) {
   if (audioLen == 0 || displayLen <= 0) return;
   int samples_per_pixel = (int)(audioLen / displayLen);
   if (samples_per_pixel < 4) samples_per_pixel = 4;
@@ -565,43 +565,52 @@ void updateRgbLed(LooperState state) {
 //====================================================================
 void AudioCallback(float** in, float** out, size_t size) {
 
-  delay_effect.SetDelay(delay_time_samples);
+  // --- REGLA: La entrada solo se procesa para grabar y sobregrabar ---
 
-  for (size_t i = 0; i < size; i++) {
-    float input_signal = in[0][i];
-
-
-    if (!speaker_muted) {
-      input_signal = 0.0f;
+  // Estados con SALIDA SILENCIOSA y SIN procesamiento de entrada hacia el looper (solo limpia delay)
+  if (looper_state == PAUSED || looper_state == STOPPED) {
+    for (size_t i = 0; i < size; i++) {
+      // Pass-through del input si queremos que suene mientras estamos parados, o mute.
+      // Si speaker_muted es true, cortamos el sonido directo de entrada para evitar feedback.
+      float input_signal = !speaker_muted ? in[0][i] : 0.0f;
+      out[0][i] = out[1][i] = input_signal * g_gain; 
     }
+    delay_effect.Write(0.0f);  // Limpiar buffer de delay para prevenir resto de sonido
+    return;
+  }
 
+  // Estados con SALIDA SILENCIOSA (o passthrough sin feedback) y CON procesamiento de grabación
+  if (looper_state == RECORDING || looper_state == OVERDUB) {
+    for (size_t i = 0; i < size; i++) {
+      float input_signal = in[0][i]; // Usamos el canal 0 como entrada principal
+      looper.Process(input_signal);  // Lo que sea que entre, lo procesamos (grabamos)
 
-    if (looper_state == RECORDING || looper_state == OVERDUB) {
-      looper.Process(in[0][i]);
-
+      // Llenar el buffer visual de Ableton-style
       if (looper_state == RECORDING) {
         size_t pos = record_counter;
         if (pos < kBufferLengthSamples) {
-          waveform_source_buffer[pos] = in[0][i];
+          waveform_source_buffer[pos] = input_signal;
           record_counter++;
           if (record_counter > kBufferLengthSamples) record_counter = kBufferLengthSamples;
           waveform_display_needs_update = true;
         }
       }
+      // La salida es silenciosa (o solo passthrough si se requiere) para prevenir feedback
+      out[0][i] = out[1][i] = 0.0f; 
     }
+    return;
+  }
 
+  // --- ESTADO PLAYING ---
+  // El único estado con salida audible.
+  delay_effect.SetDelay(delay_time_samples);
 
-    float looper_output = 0.0f;
-    if (looper_state == PLAYING) {
-      looper_output = looper.Process(0.0f);
-    }
+  for (size_t i = 0; i < size; i++) {
+    // Procesar silencio a través del looper para obtener la señal ya grabada
+    float normal_looper_output = looper.Process(0.0f);
+    float signal_to_process = normal_looper_output;
 
-
-    float signal_to_process = input_signal + looper_output;
-
-
-
-
+    // Filtros
     if (enc1_mode == HIGHPASS) {
       g_highpass_filter->Process(signal_to_process);
       signal_to_process = g_highpass_filter->High();
@@ -610,12 +619,12 @@ void AudioCallback(float** in, float** out, size_t size) {
       signal_to_process = g_lowpass_filter->Low();
     }
 
-
+    // Delay
     float delayed = delay_effect.Read();
     delay_effect.Write(signal_to_process + (delayed * delay_feedback));
     float post_delay = (signal_to_process * (1.0f - delay_mix)) + (delayed * delay_mix);
 
-
+    // Reverb
     float reverb_out_l = 0.0f, reverb_out_r = 0.0f;
     float reverb_mix = (float)knob2_reverb_val / 100.0f;
     float mono_reverb = 0.0f;
@@ -627,10 +636,9 @@ void AudioCallback(float** in, float** out, size_t size) {
 
     float wet_signal = (post_delay * (1.0f - reverb_mix)) + (mono_reverb * reverb_mix);
 
-
+    // Ganancia y limitador
     float final_signal = wet_signal * g_gain;
-    final_signal = tanhf(final_signal) ;
-
+    final_signal = tanhf(final_signal); // Soft clip
 
     out[0][i] = out[1][i] = final_signal;
   }
@@ -845,7 +853,7 @@ void loop() {
     }
     if (max_abs_val < 1e-6f) max_abs_val = 1e-6f;
     waveform_scale = ((WAVEFORM_H / 2.0f) / max_abs_val) * 0.7f;
-    generarOndaVisual_Dinamica(displayWaveform, DISPLAY_W, waveform_source_buffer, current_recorded_samples);
+    generarOndaVisual_AbletonStyle(displayWaveform, DISPLAY_W, waveform_source_buffer, current_recorded_samples);
     waveform_ready = true;
   } else waveform_ready = false;
   waveform_display_needs_update = false;
